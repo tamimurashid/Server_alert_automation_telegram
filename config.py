@@ -1,8 +1,0 @@
-TELEGRAM_BOT_TOKEN = "7277924109:AAGAEXRCJ7rxUDRqCSZMXo5pyQboZKJ3Fno"
-TELEGRAM_CHAT_ID = "5000147537"  # Your personal chat or group ID
-SERVER_TO_MONITOR = "8.8.8.8" 
-BEAM_API_KEY = ""
-BEAM_API_SECRET = ""
-BEAM_SENDER_ID = "smartfy"
-ADMIN_PHONE_NUMBER = "255768857064"
- # Replace with your server IP or hostname
