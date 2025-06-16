@@ -1,4 +1,5 @@
 from telegram_bot import send_telegram_message, get_updates
+from sms import send_sms_alert  # We
 from monitor import get_system_status
 from config import SERVER_TO_MONITOR
 import subprocess
@@ -6,6 +7,13 @@ import threading
 import time
 
 last_status = {"online": True}
+
+alert_thresholds = {
+    "cpu": 80,   # percent
+    "ram": 80,   # percent
+    "temp": 75   # degrees Celsius, if you have temp sensor
+}
+
 
 def check_server_status():
     while True:
@@ -75,10 +83,54 @@ def listen_for_bot_commands():
                     )
                     send_telegram_message(help_msg)
 
+                    if text.startswith("/setalert"):
+                        parts = text.split()
+                        if len(parts) == 3:
+                            resource, value = parts[1], parts[2]
+                            if resource in alert_thresholds:
+                                try:
+                                    val_int = int(value)
+                                    if 0 < val_int <= 100:
+                                        alert_thresholds[resource] = val_int
+                                        send_telegram_message(f"✅ Alert threshold for {resource} set to {val_int}%")
+                                    else:
+                                        send_telegram_message("⚠️ Value must be between 1 and 100")
+                                except ValueError:
+                                    send_telegram_message("⚠️ Invalid value, must be a number")
+                            else:
+                                send_telegram_message("⚠️ Invalid resource name. Use cpu, ram, or temp.")
+                        else:
+                            send_telegram_message("⚠️ Usage: /setalert <resource> <value>")
+
+
 
             except Exception as e:
                 print("[ERROR] Failed to handle update:", e)
         time.sleep(3)
+
+from telegram_bot import send_telegram_message
+
+def check_alerts():
+    s = get_system_status()
+    alerts = []
+    
+    if s["cpu"] > alert_thresholds["cpu"]:
+        alerts.append(f"🔥 CPU usage critical: {s['cpu']}%")
+    if s["ram"] > alert_thresholds["ram"]:
+        alerts.append(f"🔥 RAM usage critical: {s['ram']}%")
+    # If you have temp sensor:
+    if "temp" in s and s["temp"] > alert_thresholds["temp"]:
+        alerts.append(f"🔥 CPU Temperature critical: {s['temp']}°C")
+
+    for alert in alerts:
+        send_telegram_message(alert)
+        send_sms_alert(alert)
+
+
+
+
+
+
 
 def escape_markdown(text):
     # Removed dot (.) and dash (-) because they don't need escaping in Telegram Markdown V2
