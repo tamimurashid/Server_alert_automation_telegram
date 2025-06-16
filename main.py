@@ -5,6 +5,7 @@ from config import SERVER_TO_MONITOR
 import subprocess
 import threading
 import time
+import re
 
 last_status = {"online": True}
 
@@ -52,7 +53,7 @@ def listen_for_bot_commands():
             try:
                 message = update["message"]
                 chat_id = message["chat"]["id"]
-                text = message.get("text", "")
+                text = message.get("text", "").strip()
 
                 print(f"[BOT] Command received: {text} from {chat_id}")
 
@@ -83,30 +84,49 @@ def listen_for_bot_commands():
                     )
                     send_telegram_message(help_msg)
 
-                    if text.startswith("/setalert"):
-                        parts = text.split()
-                        if len(parts) == 3:
-                            resource, value = parts[1], parts[2]
-                            if resource in alert_thresholds:
-                                try:
-                                    val_int = int(value)
-                                    if 0 < val_int <= 100:
-                                        alert_thresholds[resource] = val_int
-                                        send_telegram_message(f"✅ Alert threshold for {resource} set to {val_int}%")
-                                    else:
-                                        send_telegram_message("⚠️ Value must be between 1 and 100")
-                                except ValueError:
-                                    send_telegram_message("⚠️ Invalid value, must be a number")
-                            else:
-                                send_telegram_message("⚠️ Invalid resource name. Use cpu, ram, or temp.")
+                elif text.startswith("/setalert"):
+                    parts = text.split()
+                    if len(parts) == 3:
+                        resource, value = parts[1], parts[2]
+                        if resource in alert_thresholds:
+                            try:
+                                val_int = int(value)
+                                if 0 < val_int <= 100:
+                                    alert_thresholds[resource] = val_int
+                                    send_telegram_message(f"✅ Alert threshold for {resource} set to {val_int}%")
+                                else:
+                                    send_telegram_message("⚠️ Value must be between 1 and 100")
+                            except ValueError:
+                                send_telegram_message("⚠️ Invalid value, must be a number")
                         else:
-                            send_telegram_message("⚠️ Usage: /setalert <resource> <value>")
+                            send_telegram_message("⚠️ Invalid resource name. Use cpu, ram, or temp.")
+                    else:
+                        send_telegram_message("⚠️ Usage: /setalert <resource> <value>")
 
+                elif text.startswith("/ping"):
+                    parts = text.split()
+                    if len(parts) == 2:
+                        ip = parts[1]
+                        if is_valid_ip(ip):
+                            try:
+                                response = subprocess.check_output(["ping", "-c", "2", ip], universal_newlines=True, timeout=5)
+                                send_telegram_message(f"📡 Ping result for {ip}:\n{response}")
+                            except subprocess.TimeoutExpired:
+                                send_telegram_message(f"❌ Ping timed out for {ip}")
+                            except Exception as e:
+                                send_telegram_message(f"❌ Ping failed: {e}")
+                        else:
+                            send_telegram_message("⚠️ Invalid IP address.")
+                    else:
+                        send_telegram_message("⚠️ Usage: /ping <ip>")
 
+                else:
+                    send_telegram_message("⚠️ Unknown command. Type /help for the list of commands.")
 
             except Exception as e:
                 print("[ERROR] Failed to handle update:", e)
         time.sleep(3)
+
 
 from telegram_bot import send_telegram_message
 
@@ -127,10 +147,11 @@ def check_alerts():
         send_sms_alert(alert)
 
 
-
-
-
-
+def is_valid_ip(ip):
+    pattern = re.compile(
+        r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$"
+    )
+    return bool(pattern.match(ip))
 
 def escape_markdown(text):
     # Removed dot (.) and dash (-) because they don't need escaping in Telegram Markdown V2
