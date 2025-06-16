@@ -64,15 +64,29 @@ def listen_for_bot_commands():
                     msg = "✅ Server is Online" if last_status["online"] else "❌ Server is Offline"
                     send_telegram_message(msg)
 
+                elif text == "/help":
+                    help_msg = (
+                        "🤖 *Available commands:*\n"
+                        "/status - Show PC status\n"
+                        "/server - Check if server is online\n"
+                        "/ping <ip> - Ping an IP address\n"
+                        "/setalert <resource> <value> - Set alert threshold (cpu, ram, temp)\n"
+                        "/help - Show this message"
+                    )
+                    send_telegram_message(help_msg)
+
+
             except Exception as e:
                 print("[ERROR] Failed to handle update:", e)
         time.sleep(3)
 
 def escape_markdown(text):
-    escape_chars = r'\_*[]()~`>#+-=|{}.!'
+    # Removed dot (.) and dash (-) because they don't need escaping in Telegram Markdown V2
+    escape_chars = r'\_*[]()~`>#+=|{}!'  # no . and no -
     for ch in escape_chars:
         text = text.replace(ch, f"\\{ch}")
     return text
+
 
 
 if __name__ == "__main__":

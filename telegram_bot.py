@@ -4,25 +4,22 @@ from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 
 def send_telegram_message(text):
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    escaped_text = escape_markdown(text)  # escape Markdown special chars
     data = {
         "chat_id": TELEGRAM_CHAT_ID,
-        "text": escaped_text,
+        "text": text,
         "parse_mode": "Markdown"
     }
-    response = requests.post(url, data=data)
-    if response.status_code != 200:
-        print(f"[ERROR] Telegram send failed: {response.text}")
-    else:
-        print("[BOT] Message sent.")
+    try:
+        response = requests.post(url, data=data)
+        if response.status_code != 200:
+            print(f"[ERROR] Telegram send failed: {response.text}")
+        else:
+            print("[BOT] Message sent.")
+    except Exception as e:
+        print(f"[ERROR] Exception while sending Telegram message: {e}")
 
 last_update_id = 0
 
-def escape_markdown(text):
-    escape_chars = r'\_*[]()~`>#+-=|{}.!'
-    for ch in escape_chars:
-        text = text.replace(ch, f"\\{ch}")
-    return text
 
 
 def get_updates():
