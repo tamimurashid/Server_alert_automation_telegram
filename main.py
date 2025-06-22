@@ -108,6 +108,7 @@ def listen_for_bot_commands():
                                 val_int = int(value)
                                 if 0 < val_int <= 100:
                                     alert_thresholds[resource] = val_int
+                                    save_alert_thresholds()
                                     send_telegram_message(f"✅ Alert threshold for {resource} set to {val_int}%")
                                 else:
                                     send_telegram_message("⚠️ Value must be between 1 and 100")
