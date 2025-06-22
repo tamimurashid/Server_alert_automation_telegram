@@ -1,12 +1,17 @@
 import requests
+import base64
 from config import BEAM_API_KEY, BEAM_API_SECRET, BEAM_SENDER_ID, ADMIN_PHONE_NUMBER
 
 def send_sms_alert(message):
     url = "https://apisms.beem.africa/v1/send"
+    credentials = f"{BEAM_API_KEY}:{BEAM_API_SECRET}"
+    encoded_credentials = base64.b64encode(credentials.encode()).decode()
+
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Basic {BEAM_API_KEY}:{BEAM_API_SECRET}"
+        "Authorization": f"Basic {encoded_credentials}"
     }
+
     data = {
         "source_addr": BEAM_SENDER_ID,
         "encoding": "0",

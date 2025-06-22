@@ -176,10 +176,17 @@ def escape_markdown(text):
         text = text.replace(ch, f"\\{ch}")
     return text
 
+def check_alerts_loop():
+    while True:
+        check_alerts()
+        time.sleep(300)  # check every 30 seconds (adjust as needed)
+
+
 
 
 if __name__ == "__main__":
     print("[START] Monitoring started. Press Ctrl+C to stop.")
     threading.Thread(target=check_server_status, daemon=True).start()
     threading.Thread(target=listen_for_bot_commands, daemon=True).start()
+    threading.Thread(target=check_alerts_loop, daemon=True).start()
     print_status_periodically()
