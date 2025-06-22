@@ -4,10 +4,15 @@ from monitor import get_system_status
 from config import SERVER_TO_MONITOR
 import subprocess
 import threading
+import json
 import time
 import re
 
 last_status = {"online": True}
+
+ALERT_FILE = "alert_thresholds.json"
+
+
 
 alert_thresholds = {
     "cpu": 80,   # percent
@@ -128,7 +133,7 @@ def listen_for_bot_commands():
         time.sleep(3)
 
 
-from telegram_bot import send_telegram_message
+
 
 def check_alerts():
     s = get_system_status()
