@@ -50,6 +50,8 @@ def check_server_status():
 
         if online != last_status["online"]:
             msg = "✅ *Server is back online!*" if online else "❌ *Server went down!*"
+            msg_sms = "Message from server \n Server is back online!" if online else "Message from server\n Server went down!"
+            send_sms_alert(msg_sms)
             send_telegram_message(msg)
             log_event(msg)
             console.log(f"[Server] {msg}")
