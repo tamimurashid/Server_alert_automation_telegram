@@ -151,12 +151,12 @@ def check_alerts():
     alerts = []
     
     if s["cpu"] > alert_thresholds["cpu"]:
-        alerts.append(f"🔥 CPU usage critical: {s['cpu']}%")
+        alerts.append(f"CPU usage critical: {s['cpu']}%")
     if s["ram"] > alert_thresholds["ram"]:
-        alerts.append(f"🔥 RAM usage critical: {s['ram']}%")
+        alerts.append(f"RAM usage critical: {s['ram']}%")
     # If you have temp sensor:
     if "temp" in s and s["temp"] > alert_thresholds["temp"]:
-        alerts.append(f"🔥 CPU Temperature critical: {s['temp']}°C")
+        alerts.append(f"CPU Temperature critical: {s['temp']}°C")
 
     for alert in alerts:
         send_telegram_message(alert)
