@@ -22,7 +22,7 @@ It works on **Linux, macOS, and even in virtual machines** (like Kali on Virtual
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/Server_alert_automation_telegram.git
+git clone https://github.com/tamimurashid/Server_alert_automation_telegram.git
 cd Server_alert_automation_telegram
 ```
 
