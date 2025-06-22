@@ -13,12 +13,22 @@ last_status = {"online": True}
 ALERT_FILE = "alert_thresholds.json"
 
 
+# Load alert thresholds from file (if exists)
+try:
+    with open(ALERT_FILE, "r") as f:
+        alert_thresholds = json.load(f)
+except FileNotFoundError:
+    # Default values
+    alert_thresholds = {
+        "cpu": 80,
+        "ram": 80,
+        "temp": 75
+    }
 
-alert_thresholds = {
-    "cpu": 80,   # percent
-    "ram": 80,   # percent
-    "temp": 75   # degrees Celsius, if you have temp sensor
-}
+# Function to save thresholds
+def save_alert_thresholds():
+    with open(ALERT_FILE, "w") as f:
+        json.dump(alert_thresholds, f)
 
 
 def check_server_status():
