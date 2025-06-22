@@ -1,5 +1,5 @@
 from telegram_bot import send_telegram_message, get_updates
-from sms import send_sms_alert  # We
+from sms import send_sms_alert
 from monitor import get_system_status
 from config import SERVER_TO_MONITOR
 import subprocess
@@ -7,11 +7,14 @@ import threading
 import json
 import time
 import re
+from rich.console import Console
+from rich.panel import Panel
+from datetime import datetime
 
 last_status = {"online": True}
-
+console = Console()
 ALERT_FILE = "alert_thresholds.json"
-
+LOG_FILE = "system_alerts.log"
 
 # Load alert thresholds from file (if exists)
 try:
@@ -30,6 +33,12 @@ def save_alert_thresholds():
     with open(ALERT_FILE, "w") as f:
         json.dump(alert_thresholds, f)
 
+# Function to log alerts
+def log_event(event):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(LOG_FILE, "a") as f:
+        f.write(f"[{timestamp}] {event}\n")
+
 
 def check_server_status():
     while True:
@@ -42,26 +51,33 @@ def check_server_status():
         if online != last_status["online"]:
             msg = "✅ *Server is back online!*" if online else "❌ *Server went down!*"
             send_telegram_message(msg)
-            print(f"[Server] {msg}")
+            log_event(msg)
+            console.log(f"[Server] {msg}")
 
         last_status["online"] = online
         time.sleep(30)
 
+
 def print_status_periodically():
     while True:
         s = get_system_status()
-        print(
-            f"\n💻 PC STATUS\n"
+        panel = Panel(
+            f"[bold green]💻 PC STATUS[/bold green]\n"
             f"CPU: {s['cpu']}%\n"
             f"RAM: {s['ram']}%\n"
             f"Disk: {s['disk']}%\n"
             f"Uptime: {int(s['uptime']//3600)}h\n"
-            f"OS: {s['os']}\n"
+            f"OS: {s['os']}",
+            title="[bold cyan]Server Monitor[/bold cyan]",
+            border_style="blue"
         )
+        console.clear()
+        console.print(panel)
         time.sleep(60)
 
+
 def listen_for_bot_commands():
-    print("[BOT] Listening for Telegram commands...")
+    console.log("[BOT] Listening for Telegram commands...")
     while True:
         updates = get_updates()
         for update in updates:
@@ -70,7 +86,7 @@ def listen_for_bot_commands():
                 chat_id = message["chat"]["id"]
                 text = message.get("text", "").strip()
 
-                print(f"[BOT] Command received: {text} from {chat_id}")
+                console.log(f"[BOT] Command received: {text} from {chat_id}")
 
                 if text == "/status":
                     s = get_system_status()
@@ -95,9 +111,18 @@ def listen_for_bot_commands():
                         "/server - Check if server is online\n"
                         "/ping <ip> - Ping an IP address\n"
                         "/setalert <resource> <value> - Set alert threshold (cpu, ram, temp)\n"
+                        "/getlog - Show recent log events\n"
                         "/help - Show this message"
                     )
                     send_telegram_message(help_msg)
+
+                elif text == "/getlog":
+                    try:
+                        with open(LOG_FILE, "r") as f:
+                            logs = f.readlines()[-10:]
+                        send_telegram_message("📝 Last 10 Logs:\n" + ''.join(logs[-10:]))
+                    except:
+                        send_telegram_message("⚠️ Log file not found.")
 
                 elif text.startswith("/setalert"):
                     parts = text.split()
@@ -140,52 +165,48 @@ def listen_for_bot_commands():
                     send_telegram_message("⚠️ Unknown command. Type /help for the list of commands.")
 
             except Exception as e:
-                print("[ERROR] Failed to handle update:", e)
+                console.log(f"[ERROR] Failed to handle update: {e}")
         time.sleep(3)
-
-
 
 
 def check_alerts():
     s = get_system_status()
     alerts = []
-    
+
     if s["cpu"] > alert_thresholds["cpu"]:
         alerts.append(f"CPU usage critical: {s['cpu']}%")
     if s["ram"] > alert_thresholds["ram"]:
         alerts.append(f"RAM usage critical: {s['ram']}%")
-    # If you have temp sensor:
     if "temp" in s and s["temp"] > alert_thresholds["temp"]:
         alerts.append(f"CPU Temperature critical: {s['temp']}°C")
 
     for alert in alerts:
         send_telegram_message(alert)
         send_sms_alert(alert)
+        log_event(alert)
+        console.log(alert)
 
 
 def is_valid_ip(ip):
-    pattern = re.compile(
-        r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$"
-    )
+    pattern = re.compile(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$")
     return bool(pattern.match(ip))
 
+
 def escape_markdown(text):
-    # Removed dot (.) and dash (-) because they don't need escaping in Telegram Markdown V2
-    escape_chars = r'\_*[]()~`>#+=|{}!'  # no . and no -
+    escape_chars = r'\\_*[]()~`>#+=|{}!'
     for ch in escape_chars:
         text = text.replace(ch, f"\\{ch}")
     return text
 
+
 def check_alerts_loop():
     while True:
         check_alerts()
-        time.sleep(300)  # check every 30 seconds (adjust as needed)
-
-
+        time.sleep(300)  # 5 minutes
 
 
 if __name__ == "__main__":
-    print("[START] Monitoring started. Press Ctrl+C to stop.")
+    console.rule("[bold green]Server Monitor CLI Started")
     threading.Thread(target=check_server_status, daemon=True).start()
     threading.Thread(target=listen_for_bot_commands, daemon=True).start()
     threading.Thread(target=check_alerts_loop, daemon=True).start()
