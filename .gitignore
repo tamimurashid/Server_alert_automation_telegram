@@ -5,3 +5,10 @@ venv/
 *.log
 .env
 py__pycache__
+
+# Ignore local envs
+venv/
+__pycache__/
+*.pyc
+*.log
+.DS_Store
